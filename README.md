@@ -17,6 +17,9 @@ _(**Requires ENABLE_VIRTUAL_TERMINAL_PROCESSING on Windows**)_
 # Installation
 Drop `fancy.hpp` in to your project.
 
+# Preview
+![preview](images/example.gif)
+
 # Example
 ```cpp
 // Printing STL containers
