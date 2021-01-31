@@ -280,29 +280,29 @@ namespace Fancy
             std::cout << var;
             return *this;
         }
-        auto &logTime()
+        auto &logTime() const
         {
-            auto &self = *this;
+            const auto &self = *this;
             self << colors.braces.foreground() << "[" << std::chrono::system_clock::now() << colors.braces.foreground()
                  << "] " << Color::reset();
 
             return self;
         }
-        auto &success()
+        auto &success() const
         {
             std::cout << colors.braces.foreground() << "[" << colors.success.foreground() << successStr
                       << colors.braces.foreground() << "] " << Color::reset();
 
             return *this;
         }
-        auto &warning()
+        auto &warning() const
         {
             std::cout << colors.braces.foreground() << "[" << colors.warning.foreground() << warningStr
                       << colors.braces.foreground() << "] " << Color::reset();
 
             return *this;
         }
-        auto &failure()
+        auto &failure() const
         {
             std::cout << colors.braces.foreground() << "[" << colors.failure.foreground() << failureStr
                       << colors.braces.foreground() << "] " << Color::reset();
@@ -310,5 +310,5 @@ namespace Fancy
             return *this;
         }
     };
-    inline Stream fancy;
+    const inline Stream fancy;
 } // namespace Fancy

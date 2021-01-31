@@ -7,7 +7,7 @@
 int main()
 {
     using namespace std::chrono_literals;
-    auto &cout = Fancy::fancy;
+    const auto &cout = Fancy::fancy;
 
     auto start = std::chrono::system_clock::now();
 
