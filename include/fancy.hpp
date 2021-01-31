@@ -59,14 +59,15 @@ namespace Fancy
         struct
         {
             const Color timepoint{80, 80, 80};
+            const Color boolean{52, 152, 219};
             const Color duration{155, 89, 182};
+            const Color arithmetic{142, 68, 173};
 
             const Color quotes{243, 156, 18};
             const Color braces{120, 120, 120};
             const Color curlybraces{160, 160, 160};
 
             const Color important{255, 255, 255};
-            const Color arithmetic{142, 68, 173};
 
             const Color success{46, 204, 113};
             const Color failure{231, 76, 60};
@@ -170,10 +171,15 @@ namespace Fancy
                 {
                     std::cout << colors.quotes.foreground() << "\"" << what << colors.quotes.foreground() << "\"";
                 }
+                std::cout << Color::reset();
+            }
+            else if constexpr (std::is_same_v<rawType, bool>)
+            {
+                std::cout << colors.boolean.foreground() << (what ? "true" : "false") << Color::reset();
             }
             else if constexpr (std::is_arithmetic_v<T>)
             {
-                std::cout << colors.arithmetic.foreground() << what;
+                std::cout << colors.arithmetic.foreground() << what << Color::reset();
             }
             else if constexpr (is_default_printable<T>::value)
             {
@@ -202,6 +208,7 @@ namespace Fancy
                 {
                     std::cout << "ns";
                 }
+                std::cout << Color::reset();
             }
             else if constexpr (is_time_point<T>::value)
             {
@@ -218,7 +225,7 @@ namespace Fancy
                 };
                 std::cout << colors.curlybraces.foreground() << "{";
                 std::apply(unpackLambda, what);
-                std::cout << "\b\b" << colors.curlybraces.foreground() << "}";
+                std::cout << "\b\b" << colors.curlybraces.foreground() << "}" << Color::reset();
             }
             else if constexpr (is_pair<T>::value)
             {
@@ -226,7 +233,7 @@ namespace Fancy
                 this->operator<<<true>(what.first);
                 *this << ", ";
                 this->operator<<<true>(what.second);
-                std::cout << colors.curlybraces.foreground() << "}";
+                std::cout << colors.curlybraces.foreground() << "}" << Color::reset();
             }
             else if constexpr (is_container<T>::value)
             {
@@ -237,16 +244,11 @@ namespace Fancy
                     if (std::distance(it, what.end()) > 1)
                         *this << ", ";
                 }
-                std::cout << colors.braces.foreground() << "]";
+                std::cout << colors.braces.foreground() << "]" << Color::reset();
             }
             else
             {
                 static_assert(is_default_printable<T>::value, "Type is not supported!");
-            }
-
-            if constexpr (!is_default_printable<T>::value || isContainerItem)
-            {
-                std::cout << Color::reset();
             }
 
             return *this; // NOLINT
@@ -281,7 +283,7 @@ namespace Fancy
             std::cout << var;
             return *this;
         }
-        auto &logTime() const
+        auto &logTime() const noexcept
         {
             const auto &self = *this;
             self << colors.braces.foreground() << "[" << std::chrono::system_clock::now() << colors.braces.foreground()
@@ -289,21 +291,21 @@ namespace Fancy
 
             return self;
         }
-        auto &success() const
+        auto &success() const noexcept
         {
             std::cout << colors.braces.foreground() << "[" << colors.success.foreground() << successStr
                       << colors.braces.foreground() << "] " << Color::reset();
 
             return *this;
         }
-        auto &warning() const
+        auto &warning() const noexcept
         {
             std::cout << colors.braces.foreground() << "[" << colors.warning.foreground() << warningStr
                       << colors.braces.foreground() << "] " << Color::reset();
 
             return *this;
         }
-        auto &failure() const
+        auto &failure() const noexcept
         {
             std::cout << colors.braces.foreground() << "[" << colors.failure.foreground() << failureStr
                       << colors.braces.foreground() << "] " << Color::reset();

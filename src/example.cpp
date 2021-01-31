@@ -30,6 +30,7 @@ int main()
     std::tuple<int, int, float, std::string, char> tuple = {1, 2, 3.125, "String", 'c'};
     cout << "A Tuple: " << tuple << std::endl;
 
+    cout.logTime() << "A " << true << " statement and a " << false << " statement" << std::endl;
     cout.logTime() << "Time elapsed since start: " << (std::chrono::system_clock::now() - start) << std::endl;
 
     return 0;

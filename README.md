@@ -6,6 +6,7 @@
 - Print basic stl `Containers` <sub><sup>_(everything that has .begin() and .end())_</sup><sub>
 - Print `Tuples` and `Pairs`
 - Print basic chrono types
+- Print booleans (`true` and `false` insteaod of `1` and `0`)
 - Customizable
 
 # Requirements
