@@ -2,8 +2,9 @@
 
 # Features
 - Single header only
-- Print colors
-- Print basic stl containers
+- Print colors and modifiers
+- Print basic stl `Containers` <sub><sup>_(everything that has .begin() and .end())_</sup><sub>
+- Print `Tuples` and `Pairs`
 - Print basic chrono types
 - Customizable
 
