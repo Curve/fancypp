@@ -16,7 +16,7 @@ Should work on all terminals that support ansi escape codes.
 _(**Requires ENABLE_VIRTUAL_TERMINAL_PROCESSING on Windows**)_
 
 # Installation
-Drop `fancy.hpp` in to your project.
+Drop `fancy.hpp` into your project.
 
 # Preview
 ![preview](images/example.gif)
