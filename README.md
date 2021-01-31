@@ -14,6 +14,9 @@
 Should work on all terminals that support ansi escape codes.  
 _(**Requires ENABLE_VIRTUAL_TERMINAL_PROCESSING on Windows**)_
 
+# Installation
+Drop `fancy.hpp` in to your project.
+
 # Example
 ```cpp
 // Printing STL containers
@@ -33,4 +36,4 @@ fancy >> "Something that gets highlighted" << std::endl;
 ```
 
 # Customize
-You can configure basic values [here]().
+You can configure basic values [here](https://github.com/Curve/fancypp/blob/master/include/fancy.hpp#L58).
