@@ -8,20 +8,21 @@ namespace Fancy
 {
     struct Color
     {
-        int r, g, b;
+        std::uint8_t r, g, b;
+
         Color() = default;
-        Color(int r, int g, int b) : r(r), g(g), b(b) {}
+        Color(std::uint8_t r, std::uint8_t g, std::uint8_t b) : r(r), g(g), b(b) {}
 
         auto foreground() const noexcept
         {
             char buffer[32];
-            snprintf(buffer, 32, "\033[38;2;%i;%i;%im", r, g, b);
+            snprintf(buffer, 32, "\033[38;2;%u;%u;%um", r, g, b);
             return std::string(buffer);
         }
         auto background() const noexcept
         {
             char buffer[32];
-            snprintf(buffer, 32, "\033[48;2;%i;%i;%im", r, g, b);
+            snprintf(buffer, 32, "\033[48;2;%u;%u;%um", r, g, b);
             return std::string(buffer);
         }
         static constexpr auto bold() noexcept
