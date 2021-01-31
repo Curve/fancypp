@@ -28,7 +28,8 @@ std::vector<int> someInts = {1, 2, 3};
 fancy << "SomeInts: " << someInts << std::endl;
 
 // Printing custom colors
-fancy << Color{255,100,120} << "Test" << std::endl;
+fancy << Color{255,100,120}.foreground() << "Test" << std::endl;
+fancy << Color{255,100,120}.background() << "Test" << std::endl;
 
 // Printing modifiers
 fancy << Color::underline() << Color::blinking() << "Test" << std::endl;
