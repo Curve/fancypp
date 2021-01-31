@@ -290,27 +290,24 @@ namespace Fancy
         }
         auto &success()
         {
-            auto &self = *this;
-            self << colors.braces.foreground() << "[" << colors.success.foreground() << successStr
-                 << colors.braces.foreground() << "] " << Color::reset();
+            std::cout << colors.braces.foreground() << "[" << colors.success.foreground() << successStr
+                      << colors.braces.foreground() << "] " << Color::reset();
 
-            return self;
+            return *this;
         }
         auto &warning()
         {
-            auto &self = *this;
-            self << colors.braces.foreground() << "[" << colors.warning.foreground() << warningStr
-                 << colors.braces.foreground() << "] " << Color::reset();
+            std::cout << colors.braces.foreground() << "[" << colors.warning.foreground() << warningStr
+                      << colors.braces.foreground() << "] " << Color::reset();
 
-            return self;
+            return *this;
         }
         auto &failure()
         {
-            auto &self = *this;
-            self << colors.braces.foreground() << "[" << colors.failure.foreground() << failureStr
-                 << colors.braces.foreground() << "] " << Color::reset();
+            std::cout << colors.braces.foreground() << "[" << colors.failure.foreground() << failureStr
+                      << colors.braces.foreground() << "] " << Color::reset();
 
-            return self;
+            return *this;
         }
     };
     inline Stream fancy;
