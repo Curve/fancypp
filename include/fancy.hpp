@@ -1,8 +1,10 @@
 #pragma once
-#include <iomanip>
-#include <string>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <string_view>
 
 namespace Fancy
 {
