@@ -1,104 +1,32 @@
 #pragma once
 #include <chrono>
+#include <cstdint>
+#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
+#include <ostream>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 
 namespace Fancy
 {
-    struct Color
+    namespace SFINAE
     {
-        std::uint8_t r, g, b;
-
-        Color() = default;
-        Color(std::uint8_t r, std::uint8_t g, std::uint8_t b) : r(r), g(g), b(b) {}
-
-        auto foreground() const noexcept
-        {
-            char buffer[32];
-            snprintf(buffer, 32, "\033[38;2;%u;%u;%um", r, g, b);
-            return std::string(buffer);
-        }
-        auto background() const noexcept
-        {
-            char buffer[32];
-            snprintf(buffer, 32, "\033[48;2;%u;%u;%um", r, g, b);
-            return std::string(buffer);
-        }
-        static constexpr auto bold() noexcept
-        {
-            return "\033[1m";
-        }
-        static constexpr auto italic() noexcept
-        {
-            return "\033[3m";
-        }
-        static constexpr auto striked() noexcept
-        {
-            return "\033[9m";
-        }
-        static constexpr auto underline() noexcept
-        {
-            return "\033[4m";
-        }
-        template <bool fast = false> static constexpr auto blinking() noexcept
-        {
-            if constexpr (fast)
-                return "\033[6m";
-            else
-                return "\033[5m";
-        }
-        static constexpr auto reset() noexcept
-        {
-            return "\033[0m";
-        }
-    };
-
-    class Stream
-    {
-        struct
-        {
-            const Color timepoint{80, 80, 80};
-            const Color boolean{52, 152, 219};
-            const Color duration{155, 89, 182};
-            const Color arithmetic{142, 68, 173};
-
-            const Color quotes{243, 156, 18};
-            const Color braces{120, 120, 120};
-            const Color curlybraces{160, 160, 160};
-
-            const Color important{255, 255, 255};
-
-            const Color success{46, 204, 113};
-            const Color failure{231, 76, 60};
-            const Color warning{241, 196, 15};
-        } colors;
-
-        static constexpr std::string_view successStr = "success";
-        static constexpr std::string_view failureStr = "failure";
-        static constexpr std::string_view warningStr = "warning";
-
-        static constexpr bool importantBold = true;
-        static constexpr bool importantUnderline = true;
-        static constexpr bool importantBackground = false;
-        static constexpr std::string_view timeFormat = "%H:%M:%S";
-
-        template <typename T> struct is_default_printable
+        template <typename T> struct is_printable
         {
           private:
-            static auto test(...) -> std::uint8_t;
-            template <typename O>
-            static auto test(O *) -> decltype(std::declval<std::ostream &>() << std::declval<O>(), std::uint16_t{});
+            static std::uint8_t test(...);
+            template <typename O> static auto test(O *) -> decltype(std::cout << std::declval<O>(), std::uint16_t{});
 
           public:
             static const bool value = sizeof(test(reinterpret_cast<T *>(0))) == sizeof(std::uint16_t);
         };
-        template <typename T> struct is_time_point
+        template <typename T> struct is_timepoint
         {
           private:
-            static auto test(...) -> std::uint8_t;
+            static std::uint8_t test(...);
             template <typename O> static auto test(std::chrono::time_point<O> *) -> std::uint16_t;
 
           public:
@@ -107,9 +35,9 @@ namespace Fancy
         template <typename T> struct is_container
         {
           private:
-            static auto test(...) -> std::uint8_t;
+            static std::uint8_t test(...);
             template <typename O>
-            static auto test(O *) -> decltype(std::declval<O &>().begin(), std::declval<O &>().end(), std::uint16_t{});
+            static auto test(O *) -> decltype(std::declval<O>().begin(), std::declval<O>().end(), std::uint16_t{});
 
           public:
             static const bool value = sizeof(test(reinterpret_cast<T *>(0))) == sizeof(std::uint16_t);
@@ -117,9 +45,8 @@ namespace Fancy
         template <typename T> struct is_pair
         {
           private:
-            static auto test(...) -> std::uint8_t;
-            template <typename O>
-            static auto test(O *) -> decltype(std::declval<O &>().first, std::declval<O &>().second, std::uint16_t{});
+            static std::uint8_t test(...);
+            template <typename A, typename B> static auto test(std::pair<A, B> *) -> std::uint16_t;
 
           public:
             static const bool value = sizeof(test(reinterpret_cast<T *>(0))) == sizeof(std::uint16_t);
@@ -127,7 +54,7 @@ namespace Fancy
         template <typename T> struct is_tuple
         {
           private:
-            static auto test(...) -> std::uint8_t;
+            static std::uint8_t test(...);
             template <typename... O> static auto test(std::tuple<O...> *) -> std::uint16_t;
 
           public:
@@ -142,175 +69,324 @@ namespace Fancy
           public:
             static const bool value = sizeof(test(reinterpret_cast<T *>(0))) == sizeof(std::uint16_t);
         };
+    } // namespace SFINAE
 
-        template <typename T, std::enable_if_t<is_time_point<T>::value> * = nullptr>
-        static auto toTimeStr(const T &what)
+    namespace Helpers
+    {
+        template <typename T, std::enable_if_t<SFINAE::is_timepoint<T>::value> * = nullptr>
+        static auto toTimeStr(const T &what, const std::string &format)
         {
             auto time_t = std::chrono::system_clock::to_time_t(what);
-            auto tm = *std::gmtime(&time_t);
+            auto tm = *std::gmtime(&time_t); // NOLINT
 
             std::stringstream ss;
-            ss << std::put_time(&tm, timeFormat.data());
+            ss << std::put_time(&tm, format.data());
 
             return ss.str();
         }
 
-      public:
-        template <bool isContainerItem = false, typename T = void> const Stream &operator<<(const T &what) const
+        template <std::size_t I, std::size_t MaxI, typename Tuple, typename Function,
+                  std::enable_if_t<(I >= 0)> * = nullptr>
+        void iterateTupleImpl(const Tuple &tuple, const Function &func)
         {
-            using rawType = std::remove_cv_t<
-                std::remove_pointer_t<std::remove_const_t<std::remove_reference_t<std::remove_all_extents_t<T>>>>>;
+            func(I, std::get<I>(tuple));
+            if constexpr (I < MaxI)
+            {
+                iterateTupleImpl<I + 1, MaxI>(tuple, func);
+            }
+        }
+        template <typename Function, typename... P>
+        void iterateTuple(const std::tuple<P...> &tuple, const Function &func)
+        {
+            iterateTupleImpl<0, sizeof...(P) - 1>(tuple, func);
+        }
+    } // namespace Helpers
 
-            if constexpr (isContainerItem &&
-                          (std::is_same_v<rawType, std::string> || std::is_same_v<rawType, std::string_view> ||
-                           std::is_same_v<rawType, char>))
+    class BaseColor
+    {
+      protected:
+        std::uint8_t r, g, b;
+
+      public:
+        BaseColor(std::uint8_t r, std::uint8_t g, std::uint8_t b) : r(r), g(g), b(b) {}
+        virtual std::ostream &print(std::ostream &) const = 0;
+    };
+    class ForegroundColor : public BaseColor
+    {
+      public:
+        using BaseColor::BaseColor;
+        std::ostream &print(std::ostream &stream) const override
+        {
+            stream << "\033[38;2;" + std::to_string(r) + ";" + std::to_string(g) + ";" + std::to_string(b) + "m";
+            return stream;
+        }
+    };
+    class BackgroundColor : public BaseColor
+    {
+      public:
+        using BaseColor::BaseColor;
+        std::ostream &print(std::ostream &stream) const override
+        {
+            stream << "\033[48;2;" + std::to_string(r) + ";" + std::to_string(g) + ";" + std::to_string(b) + "m";
+            return stream;
+        }
+    };
+    inline std::ostream &operator<<(std::ostream &stream, const BaseColor &color)
+    {
+        return color.print(stream);
+    }
+
+    enum class EffectType
+    {
+        Bold,
+        Italic,
+        Strike,
+        Underline,
+        Blink,
+        Reset
+    };
+    template <EffectType type> struct Effect
+    {
+        constexpr Effect() = default;
+    };
+    template <EffectType type>
+    std::ostream &operator<<(std::ostream &stream, [[maybe_unused]] const Effect<type> &effect)
+    {
+        if constexpr (type == EffectType::Bold)
+        {
+            stream << "\033[1m";
+        }
+        else if constexpr (type == EffectType::Italic)
+        {
+            stream << "\033[3m";
+        }
+        else if constexpr (type == EffectType::Strike)
+        {
+            stream << "\033[9m";
+        }
+        else if constexpr (type == EffectType::Underline)
+        {
+            stream << "\033[4m";
+        }
+        else if constexpr (type == EffectType::Blink)
+        {
+            stream << "\033[5m";
+        }
+        else if constexpr (type == EffectType::Reset)
+        {
+            stream << "\033[0m";
+        }
+
+        return stream;
+    }
+    namespace SFINAE
+    {
+        template <class> struct is_effect : public std::false_type
+        {
+        };
+        template <EffectType T> struct is_effect<Effect<T>> : public std::true_type
+        {
+        };
+    } // namespace SFINAE
+
+    struct Config
+    {
+        struct
+        {
+            ForegroundColor braces{120, 120, 120};
+            ForegroundColor curlyBraces{160, 160, 160};
+
+            ForegroundColor time{80, 80, 80};
+            ForegroundColor string{243, 156, 18};
+            ForegroundColor boolean{52, 152, 219};
+            ForegroundColor duration{155, 89, 182};
+            ForegroundColor arithmetic{142, 68, 173};
+
+            ForegroundColor failure{231, 76, 60};
+            ForegroundColor message{69, 170, 242};
+            ForegroundColor success{46, 204, 113};
+            ForegroundColor warning{241, 196, 15};
+        } colors;
+
+        struct
+        {
+            std::string message = "message";
+            std::string success = "success";
+            std::string warning = "warning";
+            std::string failure = "failure";
+        } strings;
+
+        struct
+        {
+            std::string timeFormat = "%H:%M:%S";
+        } formatting;
+
+        struct
+        {
+            std::function<void(std::ostream &)> style = [](std::ostream &stream) {
+                stream << Effect<EffectType::Bold>() << Effect<EffectType::Underline>();
+            };
+        } importantStyle;
+    };
+
+    class Stream
+    {
+      private:
+        Config config;
+
+      public:
+        Stream() = default;
+        Stream(Config config) : config(std::move(config)) {}
+
+        template <typename T> auto &operator<<(const T &what) const
+        {
+            using raw_type = std::decay_t<T>;
+
+            if constexpr (std::is_same_v<raw_type, std::string> || std::is_same_v<raw_type, std::string_view> ||
+                          std::is_same_v<T, const char *>)
             {
-                if constexpr (std::is_same_v<T, char>)
-                {
-                    std::cout << colors.quotes.foreground() << "'" << what << colors.quotes.foreground() << "'";
-                }
-                else
-                {
-                    std::cout << colors.quotes.foreground() << "\"" << what << colors.quotes.foreground() << "\"";
-                }
-                std::cout << Color::reset();
+                std::cout << config.colors.string << "\"" << what << "\"";
             }
-            else if constexpr (std::is_same_v<rawType, bool>)
+            else if constexpr (std::is_same_v<raw_type, char>)
             {
-                std::cout << colors.boolean.foreground() << (what ? "true" : "false") << Color::reset();
+                std::cout << config.colors.string << "'" << what << "'";
             }
-            else if constexpr (std::is_arithmetic_v<T>)
+            else if constexpr (std::is_same_v<raw_type, bool>)
             {
-                std::cout << colors.arithmetic.foreground() << what << Color::reset();
+                std::cout << config.colors.boolean << (what == true ? "true" : "false");
             }
-            else if constexpr (is_default_printable<T>::value)
+            else if constexpr (std::is_arithmetic_v<raw_type>)
             {
-                std::cout << what;
+                std::cout << config.colors.arithmetic << what;
             }
-            else if constexpr (is_duration<T>::value)
+            else if constexpr (SFINAE::is_timepoint<raw_type>::value)
             {
-                std::cout << colors.duration.foreground() << what.count();
-                if constexpr (std::is_same_v<T, std::chrono::hours>)
+                std::cout << config.colors.time << Helpers::toTimeStr(what, config.formatting.timeFormat);
+            }
+            else if constexpr (SFINAE::is_duration<raw_type>::value)
+            {
+                std::cout << config.colors.duration << what.count();
+                if constexpr (std::is_same_v<raw_type, std::chrono::hours>)
                 {
                     std::cout << "h";
                 }
-                else if constexpr (std::is_same_v<T, std::chrono::minutes>)
+                else if constexpr (std::is_same_v<raw_type, std::chrono::minutes>)
                 {
                     std::cout << "m";
                 }
-                else if constexpr (std::is_same_v<T, std::chrono::seconds>)
+                else if constexpr (std::is_same_v<raw_type, std::chrono::seconds>)
                 {
                     std::cout << "s";
                 }
-                else if constexpr (std::is_same_v<T, std::chrono::milliseconds>)
+                else if constexpr (std::is_same_v<raw_type, std::chrono::milliseconds>)
                 {
                     std::cout << "ms";
                 }
-                else if constexpr (std::is_same_v<T, std::chrono::nanoseconds>)
+                else if constexpr (std::is_same_v<raw_type, std::chrono::microseconds>)
+                {
+                    std::cout << "µs";
+                }
+                else if constexpr (std::is_same_v<raw_type, std::chrono::nanoseconds>)
                 {
                     std::cout << "ns";
                 }
-                std::cout << Color::reset();
             }
-            else if constexpr (is_time_point<T>::value)
+            else if constexpr (SFINAE::is_tuple<raw_type>::value)
             {
-                std::cout << colors.timepoint.foreground() << toTimeStr(what);
+                std::cout << config.colors.curlyBraces << "{";
+
+                constexpr auto size = std::tuple_size<raw_type>::value - 1;
+                Helpers::iterateTuple(what, [this, &size](const std::size_t &I, auto &arg) {
+                    *this << arg;
+                    if (I < size)
+                    {
+                        std::cout << ", ";
+                    }
+                });
+
+                std::cout << config.colors.curlyBraces << "}";
             }
-            else if constexpr (is_tuple<T>::value)
+            else if constexpr (SFINAE::is_container<raw_type>::value)
             {
-                static const auto unpackLambda = [this](auto... args) {
-                    static const auto unpackArgs = [this](auto arg) {
-                        this->operator<<<true>(arg);
-                        *this << ", ";
-                    };
-                    (unpackArgs(args), ...);
-                };
-                std::cout << colors.curlybraces.foreground() << "{";
-                std::apply(unpackLambda, what);
-                std::cout << "\b\b" << colors.curlybraces.foreground() << "}" << Color::reset();
-            }
-            else if constexpr (is_pair<T>::value)
-            {
-                std::cout << colors.curlybraces.foreground() << "{";
-                this->operator<<<true>(what.first);
-                *this << ", ";
-                this->operator<<<true>(what.second);
-                std::cout << colors.curlybraces.foreground() << "}" << Color::reset();
-            }
-            else if constexpr (is_container<T>::value)
-            {
-                std::cout << colors.braces.foreground() << "[";
+                std::cout << config.colors.braces << "[";
                 for (auto it = what.begin(); it != what.end(); it++)
                 {
-                    this->operator<<<true>(*it);
+                    *this << *it;
                     if (std::distance(it, what.end()) > 1)
-                        *this << ", ";
+                    {
+                        std::cout << ", ";
+                    }
                 }
-                std::cout << colors.braces.foreground() << "]" << Color::reset();
+                std::cout << config.colors.braces << "]";
+            }
+            else if constexpr (SFINAE::is_pair<raw_type>::value)
+            {
+                std::cout << config.colors.curlyBraces << "{";
+                *this << what.first;
+                std::cout << ", ";
+                *this << what.second;
+                std::cout << config.colors.curlyBraces << "}";
+            }
+            else if constexpr (SFINAE::is_printable<raw_type>::value)
+            {
+                std::cout << what;
             }
             else
             {
-                static_assert(is_default_printable<T>::value, "Type is not supported!");
+                static_assert(SFINAE::is_printable<raw_type>::value, "Type is not printable!");
             }
 
-            return *this; // NOLINT
+            if constexpr (!SFINAE::is_effect<raw_type>::value)
+            {
+                std::cout << Effect<EffectType::Reset>();
+            }
+            return *this;
         }
         template <typename T> auto &operator>>(const T &what) const
         {
-            if constexpr (importantBold)
-            {
-                std::cout << Color::bold();
-            }
-            if constexpr (importantUnderline)
-            {
-                std::cout << Color::underline();
-            }
-            if constexpr (importantBackground)
-            {
-                std::cout << colors.important.background();
-            }
-            else
-            {
-                std::cout << colors.important.foreground();
-            }
-
+            config.importantStyle.style(std::cout);
             *this << what;
-
-            std::cout << Color::reset();
             return *this;
         }
         auto &operator<<(std::ostream &(*var)(std::ostream &)) const
         {
-            std::cout << Color::reset();
+            std::cout << Effect<EffectType::Reset>();
             std::cout << var;
             return *this;
         }
         auto &logTime() const noexcept
         {
-            const auto &self = *this;
-            self << colors.braces.foreground() << "[" << std::chrono::system_clock::now() << colors.braces.foreground()
-                 << "] " << Color::reset();
-
-            return self;
+            std::cout << config.colors.braces << "[";
+            *this << std::chrono::system_clock::now();
+            std::cout << config.colors.braces << "] " << Effect<EffectType::Reset>();
+            return *this;
         }
+
         auto &success() const noexcept
         {
-            std::cout << colors.braces.foreground() << "[" << colors.success.foreground() << successStr
-                      << colors.braces.foreground() << "] " << Color::reset();
+            std::cout << config.colors.braces << "[" << config.colors.success << config.strings.success
+                      << config.colors.braces << "] " << Effect<EffectType::Reset>();
 
             return *this;
         }
         auto &warning() const noexcept
         {
-            std::cout << colors.braces.foreground() << "[" << colors.warning.foreground() << warningStr
-                      << colors.braces.foreground() << "] " << Color::reset();
+            std::cout << config.colors.braces << "[" << config.colors.warning << config.strings.warning
+                      << config.colors.braces << "] " << Effect<EffectType::Reset>();
 
             return *this;
         }
         auto &failure() const noexcept
         {
-            std::cout << colors.braces.foreground() << "[" << colors.failure.foreground() << failureStr
-                      << colors.braces.foreground() << "] " << Color::reset();
+            std::cout << config.colors.braces << "[" << config.colors.failure << config.strings.failure
+                      << config.colors.braces << "] " << Effect<EffectType::Reset>();
+
+            return *this;
+        }
+        auto &message() const noexcept
+        {
+            std::cout << config.colors.braces << "[" << config.colors.message << config.strings.message
+                      << config.colors.braces << "] " << Effect<EffectType::Reset>();
 
             return *this;
         }

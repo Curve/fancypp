@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(main VERSION 1.0 DESCRIPTION "")
 
 file(GLOB src
-    "src/*.cpp"
-    "src/*/*.cpp"
+    "test/*.cpp"
 )
 
 add_executable(main ${src})
