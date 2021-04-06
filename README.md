@@ -20,7 +20,7 @@ _(**Requires ENABLE_VIRTUAL_TERMINAL_PROCESSING on Windows**)_
 Drop `fancy.hpp` into your project.
 
 # Preview
-![preview](images/example.gif)
+![preview](assets/example.gif)
 
 # Example
 ```cpp
