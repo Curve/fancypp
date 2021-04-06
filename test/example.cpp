@@ -1,8 +1,8 @@
 #include <chrono>
 #include <fancy.hpp>
-#include <vector>
-#include <map>
 #include <list>
+#include <map>
+#include <vector>
 
 int main()
 {
@@ -11,6 +11,7 @@ int main()
 
     auto start = std::chrono::system_clock::now();
 
+    cout.logTime().message() << "Something happened!" << std::endl;
     cout.logTime().success() << "Something succeeded" << std::endl;
     cout.logTime().warning() << "Something is weird!" << std::endl;
     cout.logTime().failure() << "Something is wrong!" << std::endl;
@@ -25,13 +26,15 @@ int main()
     cout << "A Map: " << someMap << std::endl;
 
     cout >> "Something important" << std::endl;
-    cout << Fancy::Color::blinking() << "Something blinking" << std::endl;
+    cout << Fancy::Effect<Fancy::EffectType::Blink>() << Fancy::Effect<Fancy::EffectType::Underline>()
+         << Fancy::Effect<Fancy::EffectType::Italic>() << Fancy::Effect<Fancy::EffectType::Bold>()
+         << "Something blinking" << std::endl;
 
     std::tuple<int, int, float, std::string, char> tuple = {1, 2, 3.125, "String", 'c'};
     cout << "A Tuple: " << tuple << std::endl;
 
+    cout.logTime() << "A " << std::hex << reinterpret_cast<std::uintptr_t>(&cout) << std::dec << std::endl;
     cout.logTime() << "A " << true << " statement and a " << false << " statement" << std::endl;
     cout.logTime() << "Time elapsed since start: " << (std::chrono::system_clock::now() - start) << std::endl;
-
     return 0;
 }
