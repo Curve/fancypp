@@ -336,7 +336,8 @@ namespace Fancy
                 static_assert(SFINAE::is_printable<raw_type>::value, "Type is not printable!");
             }
 
-            if constexpr (!SFINAE::is_effect<raw_type>::value)
+            if constexpr (!SFINAE::is_effect<raw_type>::value && !std::is_same_v<ForegroundColor, raw_type> &&
+                          !std::is_same_v<BackgroundColor, raw_type>)
             {
                 std::cout << Effect<EffectType::Reset>();
             }
