@@ -29,11 +29,11 @@ std::vector<int> someInts = {1, 2, 3};
 fancy << "SomeInts: " << someInts << std::endl;
 
 // Printing custom colors
-fancy << Color{255,100,120}.foreground() << "Test" << std::endl;
-fancy << Color{255,100,120}.background() << "Test" << std::endl;
+fancy << Fancy::ForegroundColor(255,100,120) << "Test" << std::endl;
+fancy << Fancy::BackgroundColor(255,100,120) << "Test" << std::endl;
 
 // Printing modifiers
-fancy << Color::underline() << Color::blinking() << "Test" << std::endl;
+fancy << Effect<EffectType::Underline> << Effect<EffectType::Blinking> << "Test" << std::endl;
 
 // Simple highlight
 fancy >> "Something that gets highlighted" << std::endl;
@@ -42,4 +42,10 @@ fancy >> "Something that gets highlighted" << std::endl;
 ```
 
 # Customize
-You can configure basic values [here](https://github.com/Curve/fancypp/blob/master/include/fancy.hpp#L58).
+Create your Fancy::Stream instance with a custom Fancy::Config.
+```cpp
+Fancy::Config config;
+// Modify values of config
+
+Fancy::Stream fancy(config);
+```
