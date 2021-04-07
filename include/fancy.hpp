@@ -238,7 +238,7 @@ namespace Fancy
         Stream() = default;
         Stream(Config config) : config(std::move(config)) {}
 
-        template <typename T> auto &operator<<(const T &what) const
+        template <typename T> const Stream &operator<<(const T &what) const
         {
             using raw_type = std::decay_t<T>;
 
@@ -343,19 +343,19 @@ namespace Fancy
             }
             return *this;
         }
-        template <typename T> auto &operator>>(const T &what) const
+        template <typename T> const Stream &operator>>(const T &what) const
         {
             config.importantStyle.style(std::cout);
             *this << what;
             return *this;
         }
-        auto &operator<<(std::ostream &(*var)(std::ostream &)) const
+        const Stream &operator<<(std::ostream &(*var)(std::ostream &)) const
         {
             std::cout << Effect<EffectType::Reset>();
             std::cout << var;
             return *this;
         }
-        auto &logTime() const noexcept
+        const Stream &logTime() const noexcept
         {
             std::cout << config.colors.braces << "[";
             *this << std::chrono::system_clock::now();
@@ -363,28 +363,28 @@ namespace Fancy
             return *this;
         }
 
-        auto &success() const noexcept
+        const Stream &success() const noexcept
         {
             std::cout << config.colors.braces << "[" << config.colors.success << config.strings.success
                       << config.colors.braces << "] " << Effect<EffectType::Reset>();
 
             return *this;
         }
-        auto &warning() const noexcept
+        const Stream &warning() const noexcept
         {
             std::cout << config.colors.braces << "[" << config.colors.warning << config.strings.warning
                       << config.colors.braces << "] " << Effect<EffectType::Reset>();
 
             return *this;
         }
-        auto &failure() const noexcept
+        const Stream &failure() const noexcept
         {
             std::cout << config.colors.braces << "[" << config.colors.failure << config.strings.failure
                       << config.colors.braces << "] " << Effect<EffectType::Reset>();
 
             return *this;
         }
-        auto &message() const noexcept
+        const Stream &message() const noexcept
         {
             std::cout << config.colors.braces << "[" << config.colors.message << config.strings.message
                       << config.colors.braces << "] " << Effect<EffectType::Reset>();
